@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Chronos-Yoi HUD (Final Adjust)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --accent: #38bdf8;
+            --glow: rgba(56, 189, 248, 0.4);
+            --hex-bg: rgba(56, 189, 248, 0.1);
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--accent);
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh;
+        }
+
+        #chrono-hud {
+            position: relative;
+            width: 500px; height: 400px;
+            filter: drop-shadow(0 0 10px var(--glow));
+        }
+
+        /* 六角形レイアウト：間隔をわずかに広げて調整 */
+        .hex {
+            position: absolute;
+            width: 120px; height: 138px;
+            background: var(--hex-bg);
+            border: 1px solid var(--accent);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+        }
+
+        /* 座標指定：イラストの重なりを維持しつつ、隙間をミリ単位で調整 */
+        .hex:nth-child(1) { top: 25px; left: 75px; }
+        .hex:nth-child(2) { top: 55px; left: 195px; }
+        .hex:nth-child(3) { top: 15px; left: 315px; }
+        .hex:nth-child(4) { top: 145px; left: 55px; }
+        .hex:nth-child(5) { top: 175px; left: 175px; }
+        .hex:nth-child(6) { top: 155px; left: 295px; }
+        
+        .hex.gate { 
+            width: 40px; height: 46px; 
+            top: 275px; left: 400px; 
+            background: rgba(56, 189, 248, 0.5);
+        }
+
+        /* テキスト：ハニカムの集合体に対して中央に位置するようにtopを調整 */
+        #display-master {
+            position: absolute;
+            top: -20px; /* 位置を上に引き上げ */
+            left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 10; pointer-events: none;
+            padding-right: 30px; 
+        }
+
+        #time { font-size: 100px; line-height: 0.9; margin-bottom: 5px; }
+        #timer-val { font-size: 50px; display: none; }
+        
+        #date { font-size: 50px; letter-spacing: 2px; }
+
+        /* 拡張モジュール */
+        .module-wrap {
+            position: absolute;
+            left: 0; right: 0; margin: auto;
+            width: 300px;
+            opacity: 0;
+            transition: all 0.5s;
+            text-align: center;
+            pointer-events: none;
+        }
+        #progress-module { bottom: 50px; }
+        #timer-module { bottom: 100px; }
+        .module-wrap.open { opacity: 1; transform: translateY(-5px); }
+        
+        .bar-bg { width: 100%; height: 2px; background: rgba(56, 189, 248, 0.1); margin-top: 5px; }
+        .bar-fill { height: 100%; background: var(--accent); transition: width 0.5s; }
+
+        .deployed { opacity: 1 !important; transform: translate(0, 0) scale(1) !important; }
+        .glitch { animation: jitter 0.1s infinite; filter: hue-rotate(90deg); }
+        @keyframes jitter {
+            0% { transform: translate(1px, 1px); }
+            50% { transform: translate(-1px, -1px); }
+            100% { transform: translate(0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="chrono-hud">
+    <div class="hex" style="--i:1"></div><div class="hex" style="--i:2"></div><div class="hex" style="--i:3"></div>
+    <div class="hex" style="--i:4"></div><div class="hex" style="--i:5"></div><div class="hex" style="--i:6"></div>
+    <div id="visual-gate" class="hex gate" style="--i:7"></div>
+    
+    <div id="display-master">
+        <div id="time-container">
+            <div id="time">00:00</div>
+            <div id="timer-val">00:00</div>
+        </div>
+        <div id="date">2026 00/00</div>
+    </div>
+
+    <div id="progress-module" class="module-wrap">
+        <div style="font-size: 9px; display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>EXP PROGRESS</span><span id="progress-percent">0%</span>
+        </div>
+        <div class="bar-bg"><div id="progress-bar" class="bar-fill" style="width: 0%;"></div></div>
+    </div>
+
+    <div id="timer-module" class="module-wrap">
+        <div id="timer-label" style="font-size: 9px; margin-bottom: 2px;">COUNTDOWN MODE</div>
+        <div class="bar-bg"><div id="timer-bar" class="bar-fill" style="width: 100%;"></div></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+    const firebaseConfig = {
+        databaseURL: "https://yoi-log-default-rtdb.firebaseio.com", 
+        apiKey: "AIzaSyBgUBe80kRzgyqbmQgWQaP070RzfWw3NDQ",
+        projectId: "yoi-log",
+        appId: "1:248106619066:web:12aab65565d7d7292df283"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('time').innerText = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        document.getElementById('date').innerText = now.getFullYear() + " " + (now.getMonth()+1).toString().padStart(2, '0') + "/" + now.getDate().toString().padStart(2, '0');
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    window.onload = () => {
+        const hexes = document.querySelectorAll('.hex');
+        hexes.forEach(h => {
+            const rx = (Math.random() - 0.5) * 1500;
+            const ry = (Math.random() - 0.5) * 1500;
+            h.style.transform = `translate(${rx}px, ${ry}px) scale(0) rotate(180deg)`;
+        });
+        setTimeout(() => hexes.forEach(h => h.classList.add('deployed')), 100);
+    };
+
+let currentProg = 0; 
+
+    onValue(ref(db, 'hud_settings'), (snap) => {
+        const data = snap.val();
+        if(!data) return;
+
+        if(data.glitch) document.getElementById('chrono-hud').classList.add('glitch');
+        else document.getElementById('chrono-hud').classList.remove('glitch');
+
+        // 【書き換え】進捗バーの更新（アニメーション付き）
+const progWrap = document.getElementById('progress-module');
+if(data.show_progress) {
+    progWrap.classList.add('open');
+    
+    const targetVal = parseFloat(data.progress_val || 0); // 目標の数値
+    const duration = 1000; // 1000ミリ秒（1秒）かけて動かす
+    const startTime = performance.now();
+    const startVal = currentProg; // 今表示されている数値からスタート
+
+    function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // イージング：最後の方でゆっくり止まる（easeOutQuad）
+        const easeOutQuad = 1 - (1 - progress) * (1 - progress);
+        currentProg = startVal + (targetVal - startVal) * easeOutQuad;
+        
+        const displayVal = currentProg.toFixed(2);
+        document.getElementById('progress-bar').style.width = displayVal + "%";
+        document.getElementById('progress-percent').innerText = displayVal + "%";
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    }
+    requestAnimationFrame(animate);
+
+} else {
+    progWrap.classList.remove('open');
+}
+
+        const timerWrap = document.getElementById('timer-module');
+        const timeEl = document.getElementById('time');
+        const timerValEl = document.getElementById('timer-val');
+
+        if(data.timer_mode && data.timer_mode !== 'OFF') {
+            timerWrap.classList.add('open');
+            timeEl.style.display = 'none';
+            timerValEl.style.display = 'block';
+            timerValEl.innerText = data.timer_display || "00:00";
+            document.getElementById('timer-label').innerText = data.timer_mode + " MODE";
+            document.getElementById('timer-bar').style.width = (data.timer_percent || 100) + "%";
+        } else {
+            timerWrap.classList.remove('open');
+            timeEl.style.display = 'block';
+            timerValEl.style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>
