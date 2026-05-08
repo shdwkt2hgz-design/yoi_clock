@@ -127,12 +127,16 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-    const firebaseConfig = {
-        databaseURL: "https://yoi-log-default-rtdb.firebaseio.com", 
-        apiKey: "AIzaSyBgUBe80kRzgyqbmQgWQaP070RzfWw3NDQ",
-        projectId: "yoi-log",
-        appId: "1:248106619066:web:12aab65565d7d7292df283"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyAUmWZ9Itw_z6Dh-deOKmBQ8rLH9I2TAGY",
+  authDomain: "yoi-vip-chat.firebaseapp.com",
+  databaseURL: "https://yoi-vip-chat-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "yoi-vip-chat",
+  storageBucket: "yoi-vip-chat.firebasestorage.app",
+  messagingSenderId: "751624052656",
+  appId: "1:751624052656:web:780bad2d69c504e67ec075",
+  measurementId: "G-G67NWSS1C1"
+};
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
