@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yoi HUD Remote - Final</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        body {
+            background: #020617; color: #38bdf8;
+            font-family: 'Share Tech Mono', monospace;
+            display: flex; flex-direction: column; align-items: center; padding: 20px;
+        }
+        .panel {
+            width: 100%; max-width: 350px; border: 1px solid #38bdf8;
+            padding: 20px; margin-bottom: 15px; border-radius: 10px;
+            background: rgba(56, 189, 248, 0.05);
+        }
+        .label { font-size: 11px; color: #38bdf8; opacity: 0.8; margin-bottom: 10px; letter-spacing: 1px; border-left: 2px solid #38bdf8; padding-left: 8px; }
+        
+        button {
+            width: 100%; padding: 15px; margin: 5px 0;
+            background: transparent; border: 1px solid #38bdf8;
+            color: #38bdf8; font-family: inherit; font-size: 14px;
+            cursor: pointer; transition: 0.2s;
+        }
+        button:active { background: rgba(56, 189, 248, 0.2); }
+        button.active { background: #38bdf8; color: #020617; box-shadow: 0 0 10px #38bdf8; }
+        
+        input[type="range"] { width: 100%; margin: 15px 0; accent-color: #38bdf8; }
+        input[type="text"] { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #38bdf8; color: #38bdf8; text-align: center; padding: 12px; margin: 10px 0; font-family: inherit; box-sizing: border-box; }
+        
+        .val-display { text-align: right; font-size: 18px; margin-bottom: 5px; }
+        .status { font-size: 12px; margin-bottom: 20px; color: #a855f7; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+    <h2 style="margin-bottom: 2px; letter-spacing: 3px;">COMMANDER</h2>
+    <div class="status" id="conn-status">WAITING FOR CONNECTION...</div>
+
+    <div class="panel">
+        <div class="label">TIME DILATION CONTROL</div>
+        <div style="display: flex; gap: 8px;">
+            <button id="timer-off" onclick="setTimerMode('OFF')">CLOCK</button>
+            <button id="timer-down" onclick="setTimerMode('COUNTDOWN')">DOWN</button>
+            <button id="timer-up" onclick="setTimerMode('COUNTUP')">UP</button>
+        </div>
+        <input type="text" id="timer-display" value="03:00">
+        <button onclick="updateTimerDisplay()" style="border-style: double; border-width: 3px;">UPDATE TIME VALUE</button>
+    </div>
+
+    <div class="panel">
+        <div class="label">STORY PROGRESSION (EXP)</div>
+        <div class="val-display" id="prog-val">12.00%</div>
+<input type="range" id="prog-slider" min="0" max="100" value="12" step="0.01" oninput="updateLocalProg(this.value)">
+<button id="prog-btn" onclick="sendProgress()" style="border-style: double; border-width: 3px;">APPLY PROGRESS</button>
+        <button id="prog-toggle" onclick="toggleProgressVisibility()" style="margin-top: 15px; font-size: 12px; opacity: 0.7;">SHOW/HIDE MODULE</button>
+    </div>
+
+    <div class="panel">
+        <div class="label">SYSTEM INTEGRITY</div>
+        <button id="glitch-btn" onclick="toggleGlitch()" style="color: #f87171; border-color: #f87171;">TRIGGER SYNC ERROR</button>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+    const firebaseConfig = {
+        databaseURL: "https://yoi-log-default-rtdb.firebaseio.com",
+        apiKey: "AIzaSy...", // ここを埋めてね
+        projectId: "yoi-log"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const settingsRef = ref(db, 'hud_settings');
+
+    let currentSettings = {};
+    let localProgVal = 12;
+
+    onValue(settingsRef, (snap) => {
+        currentSettings = snap.val() || {};
+        document.getElementById('conn-status').innerText = "SYSTEM ONLINE";
+        
+        // UI状態の更新
+        document.getElementById('glitch-btn').className = currentSettings.glitch ? "active" : "";
+        document.getElementById('prog-toggle').className = currentSettings.show_progress ? "active" : "";
+        
+        // タイマーモードボタンのハイライト
+        const mode = currentSettings.timer_mode || 'OFF';
+        document.getElementById('timer-off').className = mode === 'OFF' ? 'active' : '';
+        document.getElementById('timer-down').className = mode === 'COUNTDOWN' ? 'active' : '';
+        document.getElementById('timer-up').className = mode === 'COUNTUP' ? 'active' : '';
+    });
+
+    // 1. タイマー関数
+    window.setTimerMode = (mode) => {
+        update(settingsRef, { timer_mode: mode });
+    };
+    window.updateTimerDisplay = () => {
+        const val = document.getElementById('timer-display').value;
+        update(settingsRef, { timer_display: val });
+    };
+
+    // 2. 進捗関数（スライダーで保持、ボタンで送信）
+window.updateLocalProg = (val) => {
+    localProgVal = parseFloat(val).toFixed(2); // 小数点第2位まで表示
+    document.getElementById('prog-val').innerText = localProgVal + "%";
+};
+
+    window.sendProgress = () => {
+        update(settingsRef, { progress_val: parseInt(localProgVal) });
+    };
+    window.toggleProgressVisibility = () => {
+        update(settingsRef, { show_progress: !currentSettings.show_progress });
+    };
+
+    // 3. エラー関数
+    window.toggleGlitch = () => {
+        update(settingsRef, { glitch: !currentSettings.glitch });
+    };
+</script>
+</body>
+</html>
