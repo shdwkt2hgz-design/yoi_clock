@@ -91,12 +91,11 @@
         .bar-fill { height: 100%; background: var(--accent); transition: width 0.5s; }
 
         .deployed { opacity: 1 !important; transform: translate(0, 0) scale(1) !important; }
-        .glitch { animation: jitter 0.1s infinite; filter: hue-rotate(90deg); }
-        @keyframes jitter {
-            0% { transform: translate(1px, 1px); }
-            50% { transform: translate(-1px, -1px); }
-            100% { transform: translate(0, 0); }
-        }
+.glitch { 
+    animation: none !important; /* 念のためアニメーションを無効化 */
+    filter: drop-shadow(0 0 15px rgba(255, 0, 0, 1)) sepia(1) saturate(5) hue-rotate(-50deg) !important;
+}
+
     </style>
 </head>
 <body>
