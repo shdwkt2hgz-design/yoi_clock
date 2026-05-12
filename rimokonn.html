@@ -95,18 +95,28 @@ const firebaseConfig = {
     let currentSettings = {};
     let localProgVal = 12;
 
-    onValue(settingsRef, (snap) => {
+onValue(settingsRef, (snap) => {
         currentSettings = snap.val() || {};
-        document.getElementById('conn-status').innerText = "SYSTEM ONLINE";
-        if (currentSettings.timer_display) {
-    document.getElementById('timer-display').value = currentSettings.timer_display;
-}
         
-        // UI状態の更新
+        // document.getElementById('conn-status').innerText = "SYSTEM ONLINE"; // 消したので不要なら削除
+        
+        if (currentSettings.timer_display) {
+            document.getElementById('timer-display').value = currentSettings.timer_display;
+        }
+
+        // --- ここから追加：進捗率の同期 ---
+        if (currentSettings.progress_val !== undefined) {
+            const pVal = parseFloat(currentSettings.progress_val).toFixed(2);
+            localProgVal = pVal; // 内部変数も更新
+            document.getElementById('prog-val').innerText = pVal + "%"; // 文字列を更新
+            document.getElementById('prog-slider').value = pVal; // スライダーのツマミを移動
+        }
+        // --- ここまで ---
+        
+        // UI状態（ボタンの光り方など）の更新
         document.getElementById('glitch-btn').className = currentSettings.glitch ? "active" : "";
         document.getElementById('prog-toggle').className = currentSettings.show_progress ? "active" : "";
         
-        // タイマーモードボタンのハイライト
         const mode = currentSettings.timer_mode || 'OFF';
         document.getElementById('timer-off').className = mode === 'OFF' ? 'active' : '';
         document.getElementById('timer-down').className = mode === 'COUNTDOWN' ? 'active' : '';
