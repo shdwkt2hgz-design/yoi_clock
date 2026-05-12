@@ -173,8 +173,8 @@ onValue(settingsRef, (snap) => {
 
     window.resetTimer = () => {
         if (timerInterval) toggleTimer();
-        document.getElementById('timer-display').value = "03:00";
-        update(settingsRef, { timer_display: "03:00" });
+        document.getElementById('timer-display').value = "00:00";
+        update(settingsRef, { timer_display: "00:00" });
     };
 
     // 2. 進捗関数（スライダーで保持、ボタンで送信）
