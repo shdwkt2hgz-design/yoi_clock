@@ -65,11 +65,16 @@
         }
 
         #time { font-size: 100px; line-height: 0.9; margin-bottom: 5px; }
-        #timer-val { font-size: 50px; display: none; }
+        #timer-val { 
+            font-size: 120px; /* 時計(100px)より一回り大きく */
+            line-height: 0.8;
+            letter-spacing: -2px;
+            display: none; 
+        }
         
         #date { font-size: 50px; letter-spacing: 2px; }
 
-        /* 拡張モジュール */
+        /* 不要なタイマー用モジュール設定を削除し、進捗バーのみ残す */
         .module-wrap {
             position: absolute;
             left: 0; right: 0; margin: auto;
@@ -80,7 +85,6 @@
             pointer-events: none;
         }
         #progress-module { bottom: 50px; }
-        #timer-module { bottom: 100px; }
         .module-wrap.open { opacity: 1; transform: translateY(-5px); }
         
         .bar-bg { width: 100%; height: 2px; background: rgba(56, 189, 248, 0.1); margin-top: 5px; }
@@ -115,11 +119,6 @@
             <span>EXP PROGRESS</span><span id="progress-percent">0%</span>
         </div>
         <div class="bar-bg"><div id="progress-bar" class="bar-fill" style="width: 0%;"></div></div>
-    </div>
-
-    <div id="timer-module" class="module-wrap">
-        <div id="timer-label" style="font-size: 9px; margin-bottom: 2px;">COUNTDOWN MODE</div>
-        <div class="bar-bg"><div id="timer-bar" class="bar-fill" style="width: 100%;"></div></div>
     </div>
 </div>
 
@@ -200,20 +199,21 @@ if(data.show_progress) {
     progWrap.classList.remove('open');
 }
 
-        const timerWrap = document.getElementById('timer-module');
+// タイマーモード時の表示切り替え（日付も連動して消えるように修正）
         const timeEl = document.getElementById('time');
         const timerValEl = document.getElementById('timer-val');
+        const dateEl = document.getElementById('date');
 
         if(data.timer_mode && data.timer_mode !== 'OFF') {
-            timerWrap.classList.add('open');
+            // タイマーON：時計と日付を完全に隠し、タイマーのみを巨大表示
             timeEl.style.display = 'none';
+            dateEl.style.display = 'none'; 
             timerValEl.style.display = 'block';
             timerValEl.innerText = data.timer_display || "00:00";
-            document.getElementById('timer-label').innerText = data.timer_mode + " MODE";
-            document.getElementById('timer-bar').style.width = (data.timer_percent || 100) + "%";
         } else {
-            timerWrap.classList.remove('open');
+            // タイマーOFF：通常の時計と日付を表示に戻す
             timeEl.style.display = 'block';
+            dateEl.style.display = 'block';
             timerValEl.style.display = 'none';
         }
     });
