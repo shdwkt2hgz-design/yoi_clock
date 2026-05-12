@@ -49,6 +49,10 @@
         <input type="text" id="timer-display" value="03:00">
         <button onclick="updateTimerDisplay()" style="border-style: double; border-width: 3px;">UPDATE TIME VALUE</button>
     </div>
+    <div style="display: flex; gap: 8px; margin-top: 10px;">
+    <button id="timer-start" onclick="toggleTimer()">START / PAUSE</button>
+    <button onclick="resetTimer()" style="opacity: 0.6; font-size: 11px;">RESET</button>
+</div>
 
     <div class="panel">
         <div class="label">STORY PROGRESSION (EXP)</div>
@@ -88,6 +92,9 @@ const firebaseConfig = {
     onValue(settingsRef, (snap) => {
         currentSettings = snap.val() || {};
         document.getElementById('conn-status').innerText = "SYSTEM ONLINE";
+        if (currentSettings.timer_display) {
+    document.getElementById('timer-display').value = currentSettings.timer_display;
+}
         
         // UI状態の更新
         document.getElementById('glitch-btn').className = currentSettings.glitch ? "active" : "";
@@ -108,6 +115,51 @@ const firebaseConfig = {
         const val = document.getElementById('timer-display').value;
         update(settingsRef, { timer_display: val });
     };
+    let timerInterval = null;
+
+    // タイマーを動かす・止める
+    window.toggleTimer = () => {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            document.getElementById('timer-start').classList.remove('active');
+        } else {
+            document.getElementById('timer-start').classList.add('active');
+            timerInterval = setInterval(runTimer, 1000);
+        }
+    };
+
+    // 実際に時間を計算してFirebaseに送る
+    function runTimer() {
+        const display = document.getElementById('timer-display').value;
+        const mode = currentSettings.timer_mode || 'OFF';
+        
+        let [min, sec] = display.split(':').map(Number);
+        let totalSec = min * 60 + sec;
+
+        if (mode === 'COUNTDOWN') {
+            totalSec = Math.max(0, totalSec - 1);
+        } else if (mode === 'COUNTUP') {
+            totalSec++;
+        }
+
+        const newMin = Math.floor(totalSec / 60).toString().padStart(2, '0');
+        const newSec = (totalSec % 60).toString().padStart(2, '0');
+        const newVal = `${newMin}:${newSec}`;
+
+        document.getElementById('timer-display').value = newVal;
+        update(settingsRef, { timer_display: newVal });
+
+        if (totalSec === 0 && mode === 'COUNTDOWN') {
+            toggleTimer(); // 0になったら自動停止
+        }
+    }
+
+    window.resetTimer = () => {
+        if (timerInterval) toggleTimer();
+        document.getElementById('timer-display').value = "03:00";
+        update(settingsRef, { timer_display: "03:00" });
+    };
 
     // 2. 進捗関数（スライダーで保持、ボタンで送信）
 window.updateLocalProg = (val) => {
@@ -115,8 +167,9 @@ window.updateLocalProg = (val) => {
     document.getElementById('prog-val').innerText = localProgVal + "%";
 };
 
-    window.sendProgress = () => {
-        update(settingsRef, { progress_val: parseInt(localProgVal) });
+window.sendProgress = () => {
+        // parseInt ではなく parseFloat にすることで、小数点も維持して送信
+        update(settingsRef, { progress_val: parseFloat(localProgVal) });
     };
     window.toggleProgressVisibility = () => {
         update(settingsRef, { show_progress: !currentSettings.show_progress });
