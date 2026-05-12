@@ -67,14 +67,15 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAzoy19DasTizIajmp7mvocNT3OL0fL_a0",
-    authDomain: "yoi-clock.firebaseapp.com",
-    projectId: "yoi-clock",
-    storageBucket: "yoi-clock.firebasestorage.app",
-    messagingSenderId: "69121635311",
-    appId: "1:69121635311:web:dc62590a64902fc6dc7c1a",
-    measurementId: "G-LN98DS3HTS"
+const firebaseConfig = {
+  apiKey: "AIzaSyAzoy19DasTizIajmp7mvocNT3OL0fL_a0",
+  authDomain: "yoi-clock.firebaseapp.com",
+  databaseURL: "https://yoi-clock-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "yoi-clock",
+  storageBucket: "yoi-clock.firebasestorage.app",
+  messagingSenderId: "69121635311",
+  appId: "1:69121635311:web:dc62590a64902fc6dc7c1a",
+  measurementId: "G-LN98DS3HTS"
 };
 
     const app = initializeApp(firebaseConfig);
